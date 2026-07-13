@@ -12,23 +12,32 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const apiKey = process.env.OPENROUTER_API_KEY;
-if (!apiKey) throw new Error("OPENROUTER_API_KEY not set");
+const cerebrasKey = process.env.CEREBRAS_API_KEY;
+const openrouterKey = process.env.OPENROUTER_API_KEY;
+
+let apiKey: string;
+let baseURL: string;
+let defaultModel: string;
+
+if (cerebrasKey) {
+  apiKey = cerebrasKey;
+  baseURL = "https://api.cerebras.ai/v1";
+  defaultModel = "gemma-4-31b";
+} else if (openrouterKey) {
+  apiKey = openrouterKey;
+  baseURL = "https://openrouter.ai/api/v1";
+  defaultModel = "google/gemini-2.5-flash";
+} else {
+  throw new Error("Set CEREBRAS_API_KEY or OPENROUTER_API_KEY.");
+}
 
 const targetSection = process.env.SECTION;
 if (!targetSection) throw new Error("SECTION env var required: tpa | lit_id | lit_en | mtk");
 
-const openai = new OpenAI({
-  apiKey,
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "https://replit.com",
-    "X-Title": "UNY CBT Trainer",
-  },
-});
+const openai = new OpenAI({ apiKey, baseURL });
 
 // Use a capable model for high-quality question generation
-const GEN_MODEL = process.env.GEN_MODEL ?? "google/gemini-2.5-flash";
+const GEN_MODEL = process.env.GEN_MODEL ?? defaultModel;
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE ?? "5", 10); // questions per call
 
 // ── Section definitions ──────────────────────────────────────────────────────
