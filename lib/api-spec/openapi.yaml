@@ -3,20 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: UNY CBT Trainer API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: ai
+    description: AI-powered features via Gemini
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +25,100 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /ai/analyze:
+    post:
+      operationId: analyzeExam
+      tags: [ai]
+      summary: Analyze exam results and return AI-powered recommendations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeInput"
+      responses:
+        "200":
+          description: AI analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /ai/explain:
+    post:
+      operationId: explainQuestion
+      tags: [ai]
+      summary: Get a deep AI explanation for a question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainInput"
+      responses:
+        "200":
+          description: Detailed explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplainResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /ai/generate-questions:
+    post:
+      operationId: generateQuestions
+      tags: [ai]
+      summary: Generate new practice questions using AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateQuestionsInput"
+      responses:
+        "200":
+          description: Generated questions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateQuestionsResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: AI service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +129,229 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SectionResult:
+      type: object
+      properties:
+        section:
+          type: string
+        total:
+          type: integer
+        correct:
+          type: integer
+        incorrect:
+          type: integer
+        unanswered:
+          type: integer
+        accuracy:
+          type: number
+        subskills:
+          type: array
+          items:
+            $ref: "#/components/schemas/SubskillResult"
+      required:
+        - section
+        - total
+        - correct
+        - incorrect
+        - unanswered
+        - accuracy
+        - subskills
+
+    SubskillResult:
+      type: object
+      properties:
+        name:
+          type: string
+        attempts:
+          type: integer
+        correct:
+          type: integer
+      required:
+        - name
+        - attempts
+        - correct
+
+    AnalyzeInput:
+      type: object
+      properties:
+        totalQuestions:
+          type: integer
+        correct:
+          type: integer
+        incorrect:
+          type: integer
+        unanswered:
+          type: integer
+        score:
+          type: number
+        accuracy:
+          type: number
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectionResult"
+        historyCount:
+          type: integer
+          description: Total number of past exam sessions
+      required:
+        - totalQuestions
+        - correct
+        - incorrect
+        - unanswered
+        - score
+        - accuracy
+        - sections
+        - historyCount
+
+    AnalysisResult:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Short overall performance summary
+        strengths:
+          type: array
+          items:
+            type: string
+          description: Areas where the student performs well
+        weaknesses:
+          type: array
+          items:
+            type: string
+          description: Areas that need improvement
+        recommendations:
+          type: array
+          items:
+            type: string
+          description: Specific actionable study tips
+        readinessLevel:
+          type: string
+          description: Estimated UNY readiness level (e.g. Siap, Perlu Latihan Lebih, Belum Siap)
+        motivationalMessage:
+          type: string
+          description: A motivational message for the student
+      required:
+        - summary
+        - strengths
+        - weaknesses
+        - recommendations
+        - readinessLevel
+        - motivationalMessage
+
+    ExplainInput:
+      type: object
+      properties:
+        section:
+          type: string
+        subskill:
+          type: string
+        question:
+          type: string
+        passage:
+          type: ["string", "null"]
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: integer
+        userAnswer:
+          type: ["integer", "null"]
+        basicExplanation:
+          type: string
+      required:
+        - section
+        - subskill
+        - question
+        - options
+        - correctAnswer
+        - basicExplanation
+
+    ExplainResult:
+      type: object
+      properties:
+        detailedExplanation:
+          type: string
+          description: Step-by-step detailed explanation in Bahasa Indonesia
+        concept:
+          type: string
+          description: The underlying concept or skill being tested
+        tipForNext:
+          type: string
+          description: A tip for similar questions in the future
+      required:
+        - detailedExplanation
+        - concept
+        - tipForNext
+
+    GenerateQuestionsInput:
+      type: object
+      properties:
+        section:
+          type: string
+          description: "Section ID: tpa, lit_id, lit_en, or mtk"
+        subskill:
+          type: string
+          description: Specific subskill to generate questions for
+        difficulty:
+          type: string
+          description: "Difficulty: mudah, sedang, or sulit"
+        count:
+          type: integer
+          description: Number of questions to generate (max 10)
+          default: 5
+      required:
+        - section
+        - subskill
+        - difficulty
+
+    GeneratedQuestion:
+      type: object
+      properties:
+        question:
+          type: string
+        passage:
+          type: ["string", "null"]
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: integer
+        explanation:
+          type: string
+        estimatedTime:
+          type: integer
+      required:
+        - question
+        - options
+        - correctAnswer
+        - explanation
+        - estimatedTime
+
+    GenerateQuestionsResult:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/GeneratedQuestion"
+        section:
+          type: string
+        subskill:
+          type: string
+        difficulty:
+          type: string
+      required:
+        - questions
+        - section
+        - subskill
+        - difficulty

@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "UNY CBT Trainer"
+version = "1.0.0"
+id = "artifacts/uny-cbt"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19192
+
+[services.development]
+run = "pnpm --filter @workspace/uny-cbt run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/uny-cbt", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/uny-cbt/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19192"
+BASE_PATH = "/"
