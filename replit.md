@@ -12,7 +12,8 @@ Aplikasi latihan CBT (Computer Based Test) untuk persiapan ujian masuk UNY (Univ
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/scripts run generate-questions` — generate soal baru via Gemini API
 - Required env: `DATABASE_URL` — Postgres connection string
-- Required env: `GEMINI_API_KEY` — Gemini API key untuk fitur AI
+- Required env: `OPENROUTER_API_KEY` (atau `CEREBRAS_API_KEY`) — API server butuh salah satu untuk fitur AI (analyze/explain/generate-questions routes); Cerebras diprioritaskan jika keduanya ada
+- Optional env: `GEMINI_API_KEY` — hanya dipakai oleh script `generate-questions` (bukan oleh api-server)
 
 ## Stack
 
