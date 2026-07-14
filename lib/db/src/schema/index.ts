@@ -17,4 +17,9 @@
 //   export type InsertPost = z.infer<typeof insertPostSchema>;
 //   export type Post = typeof postsTable.$inferSelect;
 
-export {}
+export * from "./anonymous-users";
+export * from "./exam-formats";
+export * from "./tryout-sets";
+export * from "./tryout-set-items";
+export * from "./attempts";
+export * from "./wrong-answers";

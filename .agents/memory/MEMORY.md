@@ -1,1 +1,2 @@
 - [UNY CBT Gemini quota](uny-cbt-gemini-quota.md) — free-tier key = 20 req/day; 83 questions live, gen scripts ready for when quota resets
+- [UNY CBT progress/tryout architecture](uny-cbt-progress-architecture.md) — anon-UUID auth, DB-backed attempts, data-driven exam formats, orval/composite-project gotchas

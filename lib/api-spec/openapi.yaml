@@ -12,6 +12,8 @@ tags:
     description: Health operations
   - name: ai
     description: AI-powered features via Gemini
+  - name: progress
+    description: Anonymous device-scoped exam formats, tryout sets, attempts and progress
 paths:
   /healthz:
     get:
@@ -119,7 +121,184 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /exam-formats:
+    get:
+      operationId: listExamFormats
+      tags: [progress]
+      summary: List configured exam formats (data-driven exam structure)
+      responses:
+        "200":
+          description: List of exam formats
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExamFormat"
+
+  /tryout-sets:
+    get:
+      operationId: listTryoutSets
+      tags: [progress]
+      summary: List tryout sets with this device's progress on each
+      parameters:
+        - $ref: "#/components/parameters/AnonIdHeader"
+      responses:
+        "200":
+          description: List of tryout sets with progress
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TryoutSet"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tryout-sets/{code}/items:
+    get:
+      operationId: getTryoutSetItems
+      tags: [progress]
+      summary: Get the fixed question composition for a tryout set
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tryout set items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TryoutSetItem"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /attempts:
+    get:
+      operationId: listAttempts
+      tags: [progress]
+      summary: List this device's completed exam attempts (history)
+      parameters:
+        - $ref: "#/components/parameters/AnonIdHeader"
+      responses:
+        "200":
+          description: List of attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attempt"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createAttempt
+      tags: [progress]
+      summary: Save a completed exam attempt and update the wrong-answer bank
+      parameters:
+        - $ref: "#/components/parameters/AnonIdHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttemptInput"
+      responses:
+        "200":
+          description: Saved attempt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attempt"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /attempts/{id}:
+    get:
+      operationId: getAttempt
+      tags: [progress]
+      summary: Get a single attempt by id
+      parameters:
+        - $ref: "#/components/parameters/AnonIdHeader"
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attempt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attempt"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /wrong-answers:
+    get:
+      operationId: listWrongAnswers
+      tags: [progress]
+      summary: List this device's wrong-answer bank (for Review mode)
+      parameters:
+        - $ref: "#/components/parameters/AnonIdHeader"
+      responses:
+        "200":
+          description: List of wrong answers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WrongAnswer"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
+  parameters:
+    AnonIdHeader:
+      name: X-Anon-Id
+      in: header
+      required: true
+      description: Anonymous device id (UUID), generated and persisted client-side
+      schema:
+        type: string
+
   schemas:
     HealthStatus:
       type: object
@@ -355,3 +534,320 @@ components:
         - section
         - subskill
         - difficulty
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: string
+        section:
+          type: string
+        subskill:
+          type: string
+        difficulty:
+          type: string
+        sourceType:
+          type: string
+        question:
+          type: string
+        passage:
+          type: ["string", "null"]
+        options:
+          type: array
+          items:
+            type: string
+        correctAnswer:
+          type: integer
+        explanation:
+          type: string
+        estimatedTime:
+          type: integer
+      required:
+        - id
+        - section
+        - subskill
+        - difficulty
+        - sourceType
+        - question
+        - options
+        - correctAnswer
+        - explanation
+        - estimatedTime
+
+    QuestionResult:
+      type: object
+      properties:
+        question:
+          $ref: "#/components/schemas/Question"
+        userAnswer:
+          type: ["integer", "null"]
+        isCorrect:
+          type: boolean
+        doubtful:
+          type: boolean
+        timeSpent:
+          type: number
+      required:
+        - question
+        - userAnswer
+        - isCorrect
+        - doubtful
+        - timeSpent
+
+    SectionStat:
+      type: object
+      properties:
+        total:
+          type: integer
+        correct:
+          type: integer
+        incorrect:
+          type: integer
+        unanswered:
+          type: integer
+        accuracy:
+          type: number
+        avgTime:
+          type: number
+      required:
+        - total
+        - correct
+        - incorrect
+        - unanswered
+        - accuracy
+        - avgTime
+
+    AttemptInput:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Client-generated attempt id (e.g. "exam-<timestamp>")
+        mode:
+          type: string
+          description: "mini | full | materi | review | tryout"
+        tryoutSetCode:
+          type: ["string", "null"]
+          description: Set when mode is "tryout" — links the attempt to a tryout set
+        title:
+          type: string
+        totalQuestions:
+          type: integer
+        correct:
+          type: integer
+        incorrect:
+          type: integer
+        unanswered:
+          type: integer
+        score:
+          type: integer
+        accuracy:
+          type: integer
+        timeUsedSec:
+          type: integer
+        durationSec:
+          type: integer
+        sections:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/SectionStat"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionResult"
+      required:
+        - id
+        - mode
+        - title
+        - totalQuestions
+        - correct
+        - incorrect
+        - unanswered
+        - score
+        - accuracy
+        - timeUsedSec
+        - durationSec
+        - sections
+        - questions
+
+    Attempt:
+      type: object
+      properties:
+        id:
+          type: string
+        mode:
+          type: string
+        tryoutSetCode:
+          type: ["string", "null"]
+        title:
+          type: string
+        totalQuestions:
+          type: integer
+        correct:
+          type: integer
+        incorrect:
+          type: integer
+        unanswered:
+          type: integer
+        score:
+          type: integer
+        accuracy:
+          type: integer
+        timeUsedSec:
+          type: integer
+        durationSec:
+          type: integer
+        sections:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/SectionStat"
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuestionResult"
+        completedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - mode
+        - title
+        - totalQuestions
+        - correct
+        - incorrect
+        - unanswered
+        - score
+        - accuracy
+        - timeUsedSec
+        - durationSec
+        - sections
+        - questions
+        - completedAt
+
+    ExamFormatSection:
+      type: object
+      properties:
+        sectionId:
+          type: string
+        questionCount:
+          type: integer
+        durationSeconds:
+          type: integer
+        order:
+          type: integer
+      required:
+        - sectionId
+        - questionCount
+        - durationSeconds
+        - order
+
+    ExamFormat:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        label:
+          type: string
+        description:
+          type: ["string", "null"]
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExamFormatSection"
+        totalQuestions:
+          type: integer
+        totalDurationSeconds:
+          type: integer
+        sourceNotes:
+          type: ["string", "null"]
+        status:
+          type: string
+      required:
+        - id
+        - code
+        - label
+        - sections
+        - totalQuestions
+        - totalDurationSeconds
+        - status
+
+    TryoutSetProgress:
+      type: object
+      properties:
+        status:
+          type: string
+          description: "belum | sedang | selesai"
+        bestScore:
+          type: ["integer", "null"]
+        attemptsCount:
+          type: integer
+        lastAttemptId:
+          type: ["string", "null"]
+        lastCompletedAt:
+          type: ["string", "null"]
+          format: date-time
+      required:
+        - status
+        - bestScore
+        - attemptsCount
+        - lastAttemptId
+        - lastCompletedAt
+
+    TryoutSet:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        label:
+          type: string
+        description:
+          type: ["string", "null"]
+        examFormat:
+          $ref: "#/components/schemas/ExamFormat"
+        progress:
+          $ref: "#/components/schemas/TryoutSetProgress"
+      required:
+        - id
+        - code
+        - label
+        - examFormat
+        - progress
+
+    TryoutSetItem:
+      type: object
+      properties:
+        questionId:
+          type: string
+        sectionId:
+          type: string
+        subskill:
+          type: string
+        difficulty:
+          type: string
+        orderIndex:
+          type: integer
+      required:
+        - questionId
+        - sectionId
+        - subskill
+        - difficulty
+        - orderIndex
+
+    WrongAnswer:
+      type: object
+      properties:
+        questionId:
+          type: string
+        timesMissed:
+          type: integer
+        lastMissedAt:
+          type: string
+          format: date-time
+      required:
+        - questionId
+        - timesMissed
+        - lastMissedAt

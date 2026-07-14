@@ -22,12 +22,18 @@ import type {
 import type {
   AnalysisResult,
   AnalyzeInput,
+  Attempt,
+  AttemptInput,
   ErrorResponse,
+  ExamFormat,
   ExplainInput,
   ExplainResult,
   GenerateQuestionsInput,
   GenerateQuestionsResult,
-  HealthStatus
+  HealthStatus,
+  TryoutSet,
+  TryoutSetItem,
+  WrongAnswer
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -346,4 +352,537 @@ export const useGenerateQuestions = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getGenerateQuestionsMutationOptions(options));
     }
+
+export const getListExamFormatsUrl = () => {
+
+
+
+
+  return `/api/exam-formats`
+}
+
+/**
+ * @summary List configured exam formats (data-driven exam structure)
+ */
+export const listExamFormats = async ( options?: RequestInit): Promise<ExamFormat[]> => {
+
+  return customFetch<ExamFormat[]>(getListExamFormatsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListExamFormatsQueryKey = () => {
+    return [
+    `/api/exam-formats`
+    ] as const;
+    }
+
+
+export const getListExamFormatsQueryOptions = <TData = Awaited<ReturnType<typeof listExamFormats>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExamFormats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExamFormatsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExamFormats>>> = ({ signal }) => listExamFormats({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExamFormats>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListExamFormatsQueryResult = NonNullable<Awaited<ReturnType<typeof listExamFormats>>>
+export type ListExamFormatsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List configured exam formats (data-driven exam structure)
+ */
+
+export function useListExamFormats<TData = Awaited<ReturnType<typeof listExamFormats>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listExamFormats>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListExamFormatsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListTryoutSetsUrl = () => {
+
+
+
+
+  return `/api/tryout-sets`
+}
+
+/**
+ * @summary List tryout sets with this device's progress on each
+ */
+export const listTryoutSets = async ( options?: RequestInit): Promise<TryoutSet[]> => {
+
+  return customFetch<TryoutSet[]>(getListTryoutSetsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListTryoutSetsQueryKey = () => {
+    return [
+    `/api/tryout-sets`
+    ] as const;
+    }
+
+
+export const getListTryoutSetsQueryOptions = <TData = Awaited<ReturnType<typeof listTryoutSets>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTryoutSets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTryoutSetsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTryoutSets>>> = ({ signal }) => listTryoutSets({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTryoutSets>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListTryoutSetsQueryResult = NonNullable<Awaited<ReturnType<typeof listTryoutSets>>>
+export type ListTryoutSetsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List tryout sets with this device's progress on each
+ */
+
+export function useListTryoutSets<TData = Awaited<ReturnType<typeof listTryoutSets>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listTryoutSets>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListTryoutSetsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetTryoutSetItemsUrl = (code: string,) => {
+
+
+
+
+  return `/api/tryout-sets/${code}/items`
+}
+
+/**
+ * @summary Get the fixed question composition for a tryout set
+ */
+export const getTryoutSetItems = async (code: string, options?: RequestInit): Promise<TryoutSetItem[]> => {
+
+  return customFetch<TryoutSetItem[]>(getGetTryoutSetItemsUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTryoutSetItemsQueryKey = (code: string,) => {
+    return [
+    `/api/tryout-sets/${code}/items`
+    ] as const;
+    }
+
+
+export const getGetTryoutSetItemsQueryOptions = <TData = Awaited<ReturnType<typeof getTryoutSetItems>>, TError = ErrorType<ErrorResponse>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTryoutSetItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTryoutSetItemsQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTryoutSetItems>>> = ({ signal }) => getTryoutSetItems(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTryoutSetItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTryoutSetItemsQueryResult = NonNullable<Awaited<ReturnType<typeof getTryoutSetItems>>>
+export type GetTryoutSetItemsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get the fixed question composition for a tryout set
+ */
+
+export function useGetTryoutSetItems<TData = Awaited<ReturnType<typeof getTryoutSetItems>>, TError = ErrorType<ErrorResponse>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTryoutSetItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTryoutSetItemsQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListAttemptsUrl = () => {
+
+
+
+
+  return `/api/attempts`
+}
+
+/**
+ * @summary List this device's completed exam attempts (history)
+ */
+export const listAttempts = async ( options?: RequestInit): Promise<Attempt[]> => {
+
+  return customFetch<Attempt[]>(getListAttemptsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAttemptsQueryKey = () => {
+    return [
+    `/api/attempts`
+    ] as const;
+    }
+
+
+export const getListAttemptsQueryOptions = <TData = Awaited<ReturnType<typeof listAttempts>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAttempts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAttemptsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAttempts>>> = ({ signal }) => listAttempts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAttempts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAttemptsQueryResult = NonNullable<Awaited<ReturnType<typeof listAttempts>>>
+export type ListAttemptsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List this device's completed exam attempts (history)
+ */
+
+export function useListAttempts<TData = Awaited<ReturnType<typeof listAttempts>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAttempts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAttemptsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAttemptUrl = () => {
+
+
+
+
+  return `/api/attempts`
+}
+
+/**
+ * @summary Save a completed exam attempt and update the wrong-answer bank
+ */
+export const createAttempt = async (attemptInput: AttemptInput, options?: RequestInit): Promise<Attempt> => {
+
+  return customFetch<Attempt>(getCreateAttemptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attemptInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAttemptMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAttempt>>, TError,{data: BodyType<AttemptInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAttempt>>, TError,{data: BodyType<AttemptInput>}, TContext> => {
+
+const mutationKey = ['createAttempt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAttempt>>, {data: BodyType<AttemptInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAttempt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAttemptMutationResult = NonNullable<Awaited<ReturnType<typeof createAttempt>>>
+    export type CreateAttemptMutationBody = BodyType<AttemptInput>
+    export type CreateAttemptMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Save a completed exam attempt and update the wrong-answer bank
+ */
+export const useCreateAttempt = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAttempt>>, TError,{data: BodyType<AttemptInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAttempt>>,
+        TError,
+        {data: BodyType<AttemptInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAttemptMutationOptions(options));
+    }
+
+export const getGetAttemptUrl = (id: string,) => {
+
+
+
+
+  return `/api/attempts/${id}`
+}
+
+/**
+ * @summary Get a single attempt by id
+ */
+export const getAttempt = async (id: string, options?: RequestInit): Promise<Attempt> => {
+
+  return customFetch<Attempt>(getGetAttemptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAttemptQueryKey = (id: string,) => {
+    return [
+    `/api/attempts/${id}`
+    ] as const;
+    }
+
+
+export const getGetAttemptQueryOptions = <TData = Awaited<ReturnType<typeof getAttempt>>, TError = ErrorType<ErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttempt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAttemptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAttempt>>> = ({ signal }) => getAttempt(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAttempt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAttemptQueryResult = NonNullable<Awaited<ReturnType<typeof getAttempt>>>
+export type GetAttemptQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a single attempt by id
+ */
+
+export function useGetAttempt<TData = Awaited<ReturnType<typeof getAttempt>>, TError = ErrorType<ErrorResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAttempt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAttemptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListWrongAnswersUrl = () => {
+
+
+
+
+  return `/api/wrong-answers`
+}
+
+/**
+ * @summary List this device's wrong-answer bank (for Review mode)
+ */
+export const listWrongAnswers = async ( options?: RequestInit): Promise<WrongAnswer[]> => {
+
+  return customFetch<WrongAnswer[]>(getListWrongAnswersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWrongAnswersQueryKey = () => {
+    return [
+    `/api/wrong-answers`
+    ] as const;
+    }
+
+
+export const getListWrongAnswersQueryOptions = <TData = Awaited<ReturnType<typeof listWrongAnswers>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWrongAnswers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWrongAnswersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWrongAnswers>>> = ({ signal }) => listWrongAnswers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWrongAnswers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWrongAnswersQueryResult = NonNullable<Awaited<ReturnType<typeof listWrongAnswers>>>
+export type ListWrongAnswersQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List this device's wrong-answer bank (for Review mode)
+ */
+
+export function useListWrongAnswers<TData = Awaited<ReturnType<typeof listWrongAnswers>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWrongAnswers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWrongAnswersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 

@@ -1,11 +1,13 @@
 import { Link } from 'wouter';
-import { getHistory } from '@/lib/storage';
+import { useListAttempts } from '@workspace/api-client-react';
+import { attemptToExamResult } from '@/lib/adapt';
 import { aggregate, computeReadiness, computePriorities, SECTION_LABELS } from '@/lib/analysis';
 import { ArrowLeft, TrendingUp, Target, Activity, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function Progress() {
-  const history = getHistory();
+  const { data: attempts, isLoading } = useListAttempts();
+  const history = (attempts ?? []).map(attemptToExamResult);
   const stats = aggregate(history);
   const readiness = history.length > 0 ? computeReadiness(history) : null;
   const priorities = computePriorities(stats);
@@ -24,6 +26,9 @@ export default function Progress() {
         <h1 className="font-bold text-lg text-slate-800">Progress Belajar</h1>
       </div>
 
+      {isLoading ? (
+        <div className="p-5 text-sm font-bold text-slate-400">Memuat data progress...</div>
+      ) : (
       <div className="p-5 flex flex-col gap-6">
         {readiness && (
           <div className="bg-gradient-to-br from-primary to-blue-700 rounded-3xl p-6 shadow-lg text-white relative overflow-hidden">
@@ -115,6 +120,7 @@ export default function Progress() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

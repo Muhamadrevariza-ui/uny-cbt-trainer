@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _anonIdGetter: AuthTokenGetter | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +43,19 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/**
+ * Register a getter that supplies an anonymous device id. Before every
+ * fetch the getter is invoked; when it returns a non-null string, an
+ * `X-Anon-Id` header is attached to the request.
+ *
+ * Useful for apps with no login system that still want to scope progress
+ * data to an anonymous device identity.
+ * Pass `null` to clear the getter.
+ */
+export function setAnonIdGetter(getter: AuthTokenGetter | null): void {
+  _anonIdGetter = getter;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -355,6 +369,15 @@ export async function customFetch<T = unknown>(
     const token = await _authTokenGetter();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+    }
+  }
+
+  // Attach anonymous device id when a getter is configured and no
+  // X-Anon-Id header has been explicitly provided.
+  if (_anonIdGetter && !headers.has("x-anon-id")) {
+    const anonId = await _anonIdGetter();
+    if (anonId) {
+      headers.set("x-anon-id", anonId);
     }
   }
 

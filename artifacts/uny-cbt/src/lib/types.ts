@@ -23,7 +23,7 @@ export interface Question {
   estimatedTime: number; // seconds
 }
 
-export type ExamMode = "mini" | "full" | "materi" | "review";
+export type ExamMode = "mini" | "full" | "materi" | "review" | "tryout";
 
 export interface ActiveExam {
   id: string;
@@ -37,6 +37,8 @@ export interface ActiveExam {
   doubtful: boolean[];
   timeSpent: number[]; // seconds per question
   currentIndex: number;
+  /** Set when this exam is an attempt at a fixed tryout set (e.g. "to-1"). */
+  tryoutSetCode?: string;
 }
 
 export interface QuestionResult {
@@ -71,6 +73,8 @@ export interface ExamResult {
   durationSec: number;
   sections: Partial<Record<SectionId, SectionStats>>;
   questions: QuestionResult[];
+  /** Set when this result is an attempt at a fixed tryout set (e.g. "to-1"). */
+  tryoutSetCode?: string;
 }
 
 export interface ExamConfig {
@@ -79,4 +83,6 @@ export interface ExamConfig {
   questionIds: string[];
   durationSec: number;
   shuffleOptions: boolean;
+  /** Set when this exam is an attempt at a fixed tryout set (e.g. "to-1"). */
+  tryoutSetCode?: string;
 }

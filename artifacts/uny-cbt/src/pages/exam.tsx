@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { getActiveExam, clearActiveExam, saveActiveExam, saveResult } from '@/lib/storage';
+import { useCreateAttempt } from '@workspace/api-client-react';
+import { getActiveExam, clearActiveExam, saveActiveExam } from '@/lib/storage';
 import { scoreExam } from '@/lib/engine';
 import { fmtClock } from '@/lib/format';
 import { SECTION_LABELS } from '@/lib/analysis';
@@ -13,7 +14,9 @@ export default function Exam() {
   const [now, setNow] = useState(Date.now());
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSubmitOpen, setIsSubmitOpen] = useState(false);
-  
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const createAttemptMutation = useCreateAttempt();
+
   const enteredAtRef = useRef<number>(Date.now());
   
   useEffect(() => {
@@ -93,9 +96,36 @@ export default function Exam() {
       if (!prev) return prev;
       const finalExam = flushTime(prev, prev.currentIndex);
       const result = scoreExam(finalExam);
-      saveResult(result);
-      clearActiveExam();
-      setLocation(`/results/${result.id}`);
+      setSubmitError(null);
+      createAttemptMutation.mutate(
+        {
+          data: {
+            id: result.id,
+            mode: result.mode,
+            tryoutSetCode: result.tryoutSetCode ?? null,
+            title: result.title,
+            totalQuestions: result.totalQuestions,
+            correct: result.correct,
+            incorrect: result.incorrect,
+            unanswered: result.unanswered,
+            score: result.score,
+            accuracy: result.accuracy,
+            timeUsedSec: result.timeUsedSec,
+            durationSec: result.durationSec,
+            sections: result.sections as any,
+            questions: result.questions as any,
+          },
+        },
+        {
+          onSuccess: () => {
+            clearActiveExam();
+            setLocation(`/results/${result.id}`);
+          },
+          onError: () => {
+            setSubmitError("Gagal menyimpan hasil ujian. Periksa koneksi internet dan coba lagi.");
+          },
+        },
+      );
       return prev;
     });
   };
@@ -271,18 +301,27 @@ export default function Exam() {
               </div>
             </div>
             
+            {submitError && (
+              <p className="text-center text-[13px] font-bold text-red-600 mb-4 relative z-10">{submitError}</p>
+            )}
+
             <div className="flex gap-3 relative z-10">
               <button 
                 onClick={() => setIsSubmitOpen(false)}
-                className="flex-1 py-4 rounded-2xl font-bold text-slate-600 bg-slate-100 active-elevate"
+                disabled={createAttemptMutation.isPending}
+                className="flex-1 py-4 rounded-2xl font-bold text-slate-600 bg-slate-100 active-elevate disabled:opacity-50"
               >
                 Batal
               </button>
               <button 
                 onClick={handleFinalSubmit}
-                className="flex-1 py-4 rounded-2xl font-bold text-white bg-primary shadow-sm active-elevate"
+                disabled={createAttemptMutation.isPending}
+                className="flex-1 py-4 rounded-2xl font-bold text-white bg-primary shadow-sm active-elevate disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                Ya, Kumpulkan
+                {createAttemptMutation.isPending && (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                )}
+                {createAttemptMutation.isPending ? "Menyimpan..." : "Ya, Kumpulkan"}
               </button>
             </div>
           </div>

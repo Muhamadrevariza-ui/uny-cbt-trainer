@@ -1,17 +1,21 @@
 import { useParams, Link } from 'wouter';
-import { getResult, getHistory } from '@/lib/storage';
-import { aggregate, computePriorities, SECTION_LABELS } from '@/lib/analysis';
-import { useAnalyzeExam } from '@workspace/api-client-react';
+import { useGetAttempt, useListAttempts, useAnalyzeExam } from '@workspace/api-client-react';
+import { attemptToExamResult } from '@/lib/adapt';
+import { SECTION_LABELS } from '@/lib/analysis';
 import { ArrowLeft, Brain, Sparkles, Target, CheckCircle2, XCircle, MinusCircle, Clock } from 'lucide-react';
 import { fmtMinutes } from '@/lib/format';
 
 export default function Results() {
   const { id } = useParams<{ id: string }>();
-  const result = getResult(id || "");
-  const history = getHistory();
+  const { data: attempt, isLoading, isError } = useGetAttempt(id || "");
+  const { data: attempts } = useListAttempts();
   const analyzeMutation = useAnalyzeExam();
-  
-  if (!result) return <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 font-bold text-slate-500">Data tidak ditemukan</div>;
+
+  if (isLoading) return <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 font-bold text-slate-500">Memuat hasil...</div>;
+  if (isError || !attempt) return <div className="min-h-[100dvh] flex items-center justify-center bg-slate-50 font-bold text-slate-500">Data tidak ditemukan</div>;
+
+  const result = attemptToExamResult(attempt);
+  const historyCount = attempts?.length ?? 0;
 
   const handleAIAnalyze = () => {
     analyzeMutation.mutate({
@@ -22,7 +26,7 @@ export default function Results() {
         unanswered: result.unanswered,
         score: result.score,
         accuracy: result.accuracy,
-        historyCount: history.length,
+        historyCount,
         sections: Object.entries(result.sections).map(([section, s]) => ({
           section,
           total: s!.total,

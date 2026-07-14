@@ -1,10 +1,14 @@
 import { Link } from 'wouter';
-import { getHistory } from '@/lib/storage';
+import { useListAttempts, useListTryoutSets } from '@workspace/api-client-react';
+import { attemptToExamResult } from '@/lib/adapt';
 import { aggregate, computeReadiness } from '@/lib/analysis';
-import { BookOpen, Target, Clock, Trophy, BarChart3, History, ArrowRight } from 'lucide-react';
+import { BookOpen, Target, Clock, Trophy, BarChart3, History, ArrowRight, ListChecks, CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const history = getHistory();
+  const { data: attempts, isLoading: attemptsLoading } = useListAttempts();
+  const { data: tryoutSets, isLoading: setsLoading } = useListTryoutSets();
+
+  const history = (attempts ?? []).map(attemptToExamResult);
   const stats = aggregate(history);
   const readiness = history.length > 0 ? computeReadiness(history) : null;
   const recentHistory = [...history].reverse().slice(0, 5);
@@ -23,7 +27,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 gap-3 mt-6 relative z-10">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
             <div className="text-white/70 text-xs font-bold mb-1 uppercase tracking-wider">Skor Terakhir</div>
-            <div className="text-3xl font-black">{stats.latestScore ?? '-'}</div>
+            <div className="text-3xl font-black">{attemptsLoading ? '…' : stats.latestScore ?? '-'}</div>
           </div>
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
             <div className="text-white/70 text-xs font-bold mb-1 uppercase tracking-wider">Akurasi</div>
@@ -99,6 +103,43 @@ export default function Dashboard() {
               </div>
             </Link>
           </div>
+        </div>
+
+        <div>
+          <h2 className="font-bold text-slate-800 mb-3 text-lg flex items-center gap-2 px-1">
+            <ListChecks className="w-5 h-5 text-slate-600" /> Paket Tryout
+          </h2>
+          {setsLoading ? (
+            <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm text-sm font-medium text-slate-400">Memuat paket tryout…</div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {(tryoutSets ?? []).map((set) => (
+                <Link
+                  key={set.code}
+                  href={`/setup/tryout/${set.code}`}
+                  className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between active-elevate group"
+                >
+                  <div className="flex-1 pr-3">
+                    <div className="font-bold text-slate-800 text-[15px]">{set.label}</div>
+                    <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                      {set.examFormat.totalQuestions} soal • {Math.round(set.examFormat.totalDurationSeconds / 60)} mnt
+                    </div>
+                  </div>
+                  {set.progress.status === 'selesai' ? (
+                    <div className="flex flex-col items-end shrink-0 pl-3 border-l border-slate-100">
+                      <div className="flex items-center gap-1 text-emerald-600">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span className="text-lg font-black">{set.progress.bestScore}</span>
+                      </div>
+                      <div className="text-[10px] font-bold text-slate-400 uppercase">Skor Terbaik</div>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-wider bg-primary/5 px-3 py-1.5 rounded-lg shrink-0">Belum Dikerjakan</span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         {recentHistory.length > 0 && (

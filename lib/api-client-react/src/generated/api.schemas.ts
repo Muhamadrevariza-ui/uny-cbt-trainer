@@ -106,3 +106,144 @@ export interface GenerateQuestionsResult {
   difficulty: string;
 }
 
+export interface Question {
+  id: string;
+  section: string;
+  subskill: string;
+  difficulty: string;
+  sourceType: string;
+  question: string;
+  /** @nullable */
+  passage?: string | null;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
+  estimatedTime: number;
+}
+
+export interface QuestionResult {
+  question: Question;
+  /** @nullable */
+  userAnswer: number | null;
+  isCorrect: boolean;
+  doubtful: boolean;
+  timeSpent: number;
+}
+
+export interface SectionStat {
+  total: number;
+  correct: number;
+  incorrect: number;
+  unanswered: number;
+  accuracy: number;
+  avgTime: number;
+}
+
+export type AttemptInputSections = {[key: string]: SectionStat};
+
+export interface AttemptInput {
+  /** Client-generated attempt id (e.g. "exam-<timestamp>") */
+  id: string;
+  /** mini | full | materi | review | tryout */
+  mode: string;
+  /**
+     * Set when mode is "tryout" — links the attempt to a tryout set
+     * @nullable
+     */
+  tryoutSetCode?: string | null;
+  title: string;
+  totalQuestions: number;
+  correct: number;
+  incorrect: number;
+  unanswered: number;
+  score: number;
+  accuracy: number;
+  timeUsedSec: number;
+  durationSec: number;
+  sections: AttemptInputSections;
+  questions: QuestionResult[];
+}
+
+export type AttemptSections = {[key: string]: SectionStat};
+
+export interface Attempt {
+  id: string;
+  mode: string;
+  /** @nullable */
+  tryoutSetCode?: string | null;
+  title: string;
+  totalQuestions: number;
+  correct: number;
+  incorrect: number;
+  unanswered: number;
+  score: number;
+  accuracy: number;
+  timeUsedSec: number;
+  durationSec: number;
+  sections: AttemptSections;
+  questions: QuestionResult[];
+  completedAt: string;
+}
+
+export interface ExamFormatSection {
+  sectionId: string;
+  questionCount: number;
+  durationSeconds: number;
+  order: number;
+}
+
+export interface ExamFormat {
+  id: number;
+  code: string;
+  label: string;
+  /** @nullable */
+  description?: string | null;
+  sections: ExamFormatSection[];
+  totalQuestions: number;
+  totalDurationSeconds: number;
+  /** @nullable */
+  sourceNotes?: string | null;
+  status: string;
+}
+
+export interface TryoutSetProgress {
+  /** belum | sedang | selesai */
+  status: string;
+  /** @nullable */
+  bestScore: number | null;
+  attemptsCount: number;
+  /** @nullable */
+  lastAttemptId: string | null;
+  /** @nullable */
+  lastCompletedAt: string | null;
+}
+
+export interface TryoutSet {
+  id: number;
+  code: string;
+  label: string;
+  /** @nullable */
+  description?: string | null;
+  examFormat: ExamFormat;
+  progress: TryoutSetProgress;
+}
+
+export interface TryoutSetItem {
+  questionId: string;
+  sectionId: string;
+  subskill: string;
+  difficulty: string;
+  orderIndex: number;
+}
+
+export interface WrongAnswer {
+  questionId: string;
+  timesMissed: number;
+  lastMissedAt: string;
+}
+
+/**
+ * Anonymous device id (UUID), generated and persisted client-side
+ */
+export type AnonIdHeaderParameter = string;
+

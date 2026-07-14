@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useParams, Link } from 'wouter';
-import { getResult } from '@/lib/storage';
-import { useExplainQuestion } from '@workspace/api-client-react';
+import { useGetAttempt, useExplainQuestion } from '@workspace/api-client-react';
+import { attemptToExamResult } from '@/lib/adapt';
 import { ArrowLeft, ChevronLeft, ChevronRight, Brain, CheckCircle, XCircle } from 'lucide-react';
 import { SECTION_LABELS } from '@/lib/analysis';
 
 export default function Review() {
   const { id } = useParams<{ id: string }>();
-  const result = getResult(id || "");
+  const { data: attempt, isLoading, isError } = useGetAttempt(id || "");
   const [qIndex, setQIndex] = useState(0);
   const explainMutation = useExplainQuestion();
-  
-  if (!result) return <div className="min-h-[100dvh] flex justify-center items-center bg-slate-50 font-bold text-slate-500">Data tidak ditemukan</div>;
+
+  if (isLoading) return <div className="min-h-[100dvh] flex justify-center items-center bg-slate-50 font-bold text-slate-500">Memuat...</div>;
+  if (isError || !attempt) return <div className="min-h-[100dvh] flex justify-center items-center bg-slate-50 font-bold text-slate-500">Data tidak ditemukan</div>;
+
+  const result = attemptToExamResult(attempt);
   if (result.questions.length === 0) return <div className="min-h-[100dvh] flex justify-center items-center bg-slate-50 font-bold text-slate-500">Tidak ada soal</div>;
 
   const qr = result.questions[qIndex];

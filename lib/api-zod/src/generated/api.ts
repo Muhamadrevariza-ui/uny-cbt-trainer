@@ -100,3 +100,296 @@ export const GenerateQuestionsResponse = zod.object({
 })
 
 
+/**
+ * @summary List configured exam formats (data-driven exam structure)
+ */
+export const ListExamFormatsResponseItem = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "sections": zod.array(zod.object({
+  "sectionId": zod.string(),
+  "questionCount": zod.number(),
+  "durationSeconds": zod.number(),
+  "order": zod.number()
+})),
+  "totalQuestions": zod.number(),
+  "totalDurationSeconds": zod.number(),
+  "sourceNotes": zod.string().nullish(),
+  "status": zod.string()
+})
+export const ListExamFormatsResponse = zod.array(ListExamFormatsResponseItem)
+
+
+/**
+ * @summary List tryout sets with this device's progress on each
+ */
+export const ListTryoutSetsHeader = zod.object({
+  "X-Anon-Id": zod.string().describe('Anonymous device id (UUID), generated and persisted client-side')
+})
+
+export const ListTryoutSetsResponseItem = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "examFormat": zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string(),
+  "description": zod.string().nullish(),
+  "sections": zod.array(zod.object({
+  "sectionId": zod.string(),
+  "questionCount": zod.number(),
+  "durationSeconds": zod.number(),
+  "order": zod.number()
+})),
+  "totalQuestions": zod.number(),
+  "totalDurationSeconds": zod.number(),
+  "sourceNotes": zod.string().nullish(),
+  "status": zod.string()
+}),
+  "progress": zod.object({
+  "status": zod.string().describe('belum | sedang | selesai'),
+  "bestScore": zod.number().nullable(),
+  "attemptsCount": zod.number(),
+  "lastAttemptId": zod.string().nullable(),
+  "lastCompletedAt": zod.coerce.date().nullable()
+})
+})
+export const ListTryoutSetsResponse = zod.array(ListTryoutSetsResponseItem)
+
+
+/**
+ * @summary Get the fixed question composition for a tryout set
+ */
+export const GetTryoutSetItemsParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const GetTryoutSetItemsResponseItem = zod.object({
+  "questionId": zod.string(),
+  "sectionId": zod.string(),
+  "subskill": zod.string(),
+  "difficulty": zod.string(),
+  "orderIndex": zod.number()
+})
+export const GetTryoutSetItemsResponse = zod.array(GetTryoutSetItemsResponseItem)
+
+
+/**
+ * @summary List this device's completed exam attempts (history)
+ */
+export const ListAttemptsHeader = zod.object({
+  "X-Anon-Id": zod.string().describe('Anonymous device id (UUID), generated and persisted client-side')
+})
+
+export const ListAttemptsResponseItem = zod.object({
+  "id": zod.string(),
+  "mode": zod.string(),
+  "tryoutSetCode": zod.string().nullish(),
+  "title": zod.string(),
+  "totalQuestions": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "score": zod.number(),
+  "accuracy": zod.number(),
+  "timeUsedSec": zod.number(),
+  "durationSec": zod.number(),
+  "sections": zod.record(zod.string(), zod.object({
+  "total": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "accuracy": zod.number(),
+  "avgTime": zod.number()
+})),
+  "questions": zod.array(zod.object({
+  "question": zod.object({
+  "id": zod.string(),
+  "section": zod.string(),
+  "subskill": zod.string(),
+  "difficulty": zod.string(),
+  "sourceType": zod.string(),
+  "question": zod.string(),
+  "passage": zod.string().nullish(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number(),
+  "explanation": zod.string(),
+  "estimatedTime": zod.number()
+}),
+  "userAnswer": zod.number().nullable(),
+  "isCorrect": zod.boolean(),
+  "doubtful": zod.boolean(),
+  "timeSpent": zod.number()
+})),
+  "completedAt": zod.coerce.date()
+})
+export const ListAttemptsResponse = zod.array(ListAttemptsResponseItem)
+
+
+/**
+ * @summary Save a completed exam attempt and update the wrong-answer bank
+ */
+export const CreateAttemptHeader = zod.object({
+  "X-Anon-Id": zod.string().describe('Anonymous device id (UUID), generated and persisted client-side')
+})
+
+export const CreateAttemptBody = zod.object({
+  "id": zod.string().describe('Client-generated attempt id (e.g. \"exam-<timestamp>\")'),
+  "mode": zod.string().describe('mini | full | materi | review | tryout'),
+  "tryoutSetCode": zod.string().nullish().describe('Set when mode is \"tryout\" — links the attempt to a tryout set'),
+  "title": zod.string(),
+  "totalQuestions": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "score": zod.number(),
+  "accuracy": zod.number(),
+  "timeUsedSec": zod.number(),
+  "durationSec": zod.number(),
+  "sections": zod.record(zod.string(), zod.object({
+  "total": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "accuracy": zod.number(),
+  "avgTime": zod.number()
+})),
+  "questions": zod.array(zod.object({
+  "question": zod.object({
+  "id": zod.string(),
+  "section": zod.string(),
+  "subskill": zod.string(),
+  "difficulty": zod.string(),
+  "sourceType": zod.string(),
+  "question": zod.string(),
+  "passage": zod.string().nullish(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number(),
+  "explanation": zod.string(),
+  "estimatedTime": zod.number()
+}),
+  "userAnswer": zod.number().nullable(),
+  "isCorrect": zod.boolean(),
+  "doubtful": zod.boolean(),
+  "timeSpent": zod.number()
+}))
+})
+
+export const CreateAttemptResponse = zod.object({
+  "id": zod.string(),
+  "mode": zod.string(),
+  "tryoutSetCode": zod.string().nullish(),
+  "title": zod.string(),
+  "totalQuestions": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "score": zod.number(),
+  "accuracy": zod.number(),
+  "timeUsedSec": zod.number(),
+  "durationSec": zod.number(),
+  "sections": zod.record(zod.string(), zod.object({
+  "total": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "accuracy": zod.number(),
+  "avgTime": zod.number()
+})),
+  "questions": zod.array(zod.object({
+  "question": zod.object({
+  "id": zod.string(),
+  "section": zod.string(),
+  "subskill": zod.string(),
+  "difficulty": zod.string(),
+  "sourceType": zod.string(),
+  "question": zod.string(),
+  "passage": zod.string().nullish(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number(),
+  "explanation": zod.string(),
+  "estimatedTime": zod.number()
+}),
+  "userAnswer": zod.number().nullable(),
+  "isCorrect": zod.boolean(),
+  "doubtful": zod.boolean(),
+  "timeSpent": zod.number()
+})),
+  "completedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get a single attempt by id
+ */
+export const GetAttemptParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetAttemptHeader = zod.object({
+  "X-Anon-Id": zod.string().describe('Anonymous device id (UUID), generated and persisted client-side')
+})
+
+export const GetAttemptResponse = zod.object({
+  "id": zod.string(),
+  "mode": zod.string(),
+  "tryoutSetCode": zod.string().nullish(),
+  "title": zod.string(),
+  "totalQuestions": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "score": zod.number(),
+  "accuracy": zod.number(),
+  "timeUsedSec": zod.number(),
+  "durationSec": zod.number(),
+  "sections": zod.record(zod.string(), zod.object({
+  "total": zod.number(),
+  "correct": zod.number(),
+  "incorrect": zod.number(),
+  "unanswered": zod.number(),
+  "accuracy": zod.number(),
+  "avgTime": zod.number()
+})),
+  "questions": zod.array(zod.object({
+  "question": zod.object({
+  "id": zod.string(),
+  "section": zod.string(),
+  "subskill": zod.string(),
+  "difficulty": zod.string(),
+  "sourceType": zod.string(),
+  "question": zod.string(),
+  "passage": zod.string().nullish(),
+  "options": zod.array(zod.string()),
+  "correctAnswer": zod.number(),
+  "explanation": zod.string(),
+  "estimatedTime": zod.number()
+}),
+  "userAnswer": zod.number().nullable(),
+  "isCorrect": zod.boolean(),
+  "doubtful": zod.boolean(),
+  "timeSpent": zod.number()
+})),
+  "completedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List this device's wrong-answer bank (for Review mode)
+ */
+export const ListWrongAnswersHeader = zod.object({
+  "X-Anon-Id": zod.string().describe('Anonymous device id (UUID), generated and persisted client-side')
+})
+
+export const ListWrongAnswersResponseItem = zod.object({
+  "questionId": zod.string(),
+  "timesMissed": zod.number(),
+  "lastMissedAt": zod.coerce.date()
+})
+export const ListWrongAnswersResponse = zod.array(ListWrongAnswersResponseItem)
+
+

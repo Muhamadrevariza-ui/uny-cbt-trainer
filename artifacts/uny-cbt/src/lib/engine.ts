@@ -9,7 +9,6 @@ import type {
   SectionId,
   SectionStats,
 } from "./types";
-import { updateWrongIds } from "./storage";
 
 export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -24,10 +23,27 @@ export function getQuestionById(id: string): Question | undefined {
   return QUESTIONS.find((q) => q.id === id);
 }
 
-/** Pick `count` questions from a section without duplicates, spread across difficulties. */
-export function pickFromSection(section: SectionId, count: number, subskill?: string): Question[] {
+export type DifficultyFilter = Difficulty | "campuran";
+
+/**
+ * Pick `count` questions from a section without duplicates.
+ * With no `difficulty` filter (or "campuran"), questions are spread evenly
+ * across difficulties, as before. With a specific difficulty, only
+ * questions of that difficulty are picked.
+ */
+export function pickFromSection(
+  section: SectionId,
+  count: number,
+  subskill?: string,
+  difficulty?: DifficultyFilter,
+): Question[] {
   let pool = QUESTIONS.filter((q) => q.section === section);
   if (subskill) pool = pool.filter((q) => q.subskill === subskill);
+
+  if (difficulty && difficulty !== "campuran") {
+    return shuffle(pool.filter((q) => q.difficulty === difficulty)).slice(0, count);
+  }
+
   const byDiff: Record<Difficulty, Question[]> = {
     mudah: shuffle(pool.filter((q) => q.difficulty === "mudah")),
     sedang: shuffle(pool.filter((q) => q.difficulty === "sedang")),
@@ -84,6 +100,7 @@ export function createActiveExam(config: ExamConfig): ActiveExam {
     doubtful: ordered.map(() => false),
     timeSpent: ordered.map(() => 0),
     currentIndex: 0,
+    tryoutSetCode: config.tryoutSetCode,
   };
 }
 
@@ -137,13 +154,9 @@ export function scoreExam(exam: ActiveExam): ExamResult {
     durationSec: exam.durationSec,
     sections,
     questions,
+    tryoutSetCode: exam.tryoutSetCode,
   };
 
-  // maintain wrong-question bank for "Review Kesalahan"
-  updateWrongIds(
-    questions.filter((r) => !r.isCorrect).map((r) => r.question.id),
-    questions.filter((r) => r.isCorrect).map((r) => r.question.id),
-  );
-
+  // Wrong-answer bank is now maintained server-side (see POST /api/attempts).
   return result;
 }

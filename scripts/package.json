@@ -6,10 +6,13 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "generate-questions": "GEMINI_API_KEY=$GEMINI_API_KEY tsx ./src/generate-questions.ts",
+    "seed-tryout-sets": "tsx ./src/seed-tryout-sets.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "openai": "^4.104.0"
+    "openai": "^4.104.0",
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
