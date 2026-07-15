@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLocation, useParams, Link } from 'wouter';
-import { ArrowLeft, Play, AlertCircle, BookOpen, Clock, Target } from 'lucide-react';
+import { ArrowLeft, Play, CircleAlert as AlertCircle, BookOpen, Clock, Target, Layers, Coffee } from 'lucide-react';
 import {
   useListWrongAnswers,
   useListTryoutSets,
@@ -13,7 +13,17 @@ import {
   type TryoutSetItem,
 } from '@workspace/api-client-react';
 import { saveActiveExam } from '@/lib/storage';
-import { createActiveExam, pickFromSection, difficultyDistribution, type DifficultyFilter } from '@/lib/engine';
+import {
+  createActiveExam,
+  pickFromSection,
+  difficultyDistribution,
+  FULL_TO_SESSIONS,
+  MINI_TO_SESSIONS,
+  singleSession,
+  totalDurationWithBreaks,
+  totalQuestionCount,
+  type DifficultyFilter,
+} from '@/lib/engine';
 import { SECTION_IDS, SECTION_LABELS } from '@/lib/analysis';
 import { QUESTIONS, SUBSKILLS } from '@/data/questions';
 import type { ExamConfig, SectionId } from '@/lib/types';
@@ -50,19 +60,23 @@ export default function Setup() {
   const preview = useMemo(() => {
     let qIds: string[] = [];
     let title = "";
+    let sessions = MINI_TO_SESSIONS;
     let durationSec = 0;
+    let shuffleOptions = false;
 
     if (mode === "mini") {
       title = "Mini Try Out";
-      durationSec = 15 * 60;
-      for (const s of SECTION_IDS) {
-        qIds.push(...pickFromSection(s, 3).map(q => q.id));
+      sessions = MINI_TO_SESSIONS;
+      durationSec = totalDurationWithBreaks(sessions);
+      for (const s of sessions) {
+        qIds.push(...pickFromSection(s.sectionId, s.questionCount).map(q => q.id));
       }
     } else if (mode === "full") {
-      title = "Full Try Out";
-      durationSec = 50 * 60;
-      for (const s of SECTION_IDS) {
-        qIds.push(...pickFromSection(s, 10).map(q => q.id));
+      title = "Full Try Out (UTBK Style)";
+      sessions = FULL_TO_SESSIONS;
+      durationSec = totalDurationWithBreaks(sessions);
+      for (const s of sessions) {
+        qIds.push(...pickFromSection(s.sectionId, s.questionCount).map(q => q.id));
       }
     } else if (mode === "materi") {
       title = `Latihan: ${SECTION_LABELS[selectedSection]}`;
@@ -74,21 +88,45 @@ export default function Setup() {
       );
       qIds = qs.map(q => q.id);
       durationSec = Math.ceil(qs.reduce((acc, q) => acc + q.estimatedTime, 0) * 1.2 / 60) * 60 || 10 * 60;
+      sessions = singleSession(selectedSection, qs.length, durationSec);
     } else if (mode === "review") {
       title = "Review Kesalahan";
       qIds = wrongIds.slice(0, 15);
       const qs = qIds.map(id => QUESTIONS.find(q => q.id === id)).filter(Boolean) as any[];
       durationSec = Math.ceil(qs.reduce((acc, q) => acc + q.estimatedTime, 0) * 1.2 / 60) * 60 || 15 * 60;
+      const sectionId = (qs[0]?.section ?? "tpa") as SectionId;
+      sessions = singleSession(sectionId, qs.length, durationSec);
     } else if (mode === "tryout") {
       title = tryoutSet?.label ?? "Paket Tryout";
-      qIds = (tryoutItems ?? []).map((it) => it.questionId);
-      durationSec = tryoutSet?.examFormat.totalDurationSeconds ?? 0;
+      const fmt = tryoutSet?.examFormat;
+      if (fmt?.sections) {
+        sessions = (fmt.sections as any[]).map((s, i) => ({
+          sectionId: s.sectionId,
+          label: SECTION_LABELS[s.sectionId as SectionId] ?? s.sectionId,
+          questionCount: s.questionCount,
+          durationSec: s.durationSeconds,
+          breakAfterSec: i < (fmt.sections as any[]).length - 1 ? 5 * 60 : 0,
+        }));
+      } else {
+        sessions = FULL_TO_SESSIONS;
+      }
+      durationSec = totalDurationWithBreaks(sessions);
+      // Dynamically pick questions per session from the question bank
+      // (tryout_set_items may or may not be populated — if not, we pick fresh)
+      const pinnedIds = (tryoutItems ?? []).map((it) => it.questionId);
+      if (pinnedIds.length > 0) {
+        qIds = pinnedIds;
+      } else {
+        for (const s of sessions) {
+          qIds.push(...pickFromSection(s.sectionId as SectionId, s.questionCount).map(q => q.id));
+        }
+      }
     }
 
     const qs = qIds.map(id => QUESTIONS.find(q => q.id === id)).filter(Boolean) as any[];
     const diffs = difficultyDistribution(qs);
 
-    return { qIds, title, durationSec, diffs, qs };
+    return { qIds, title, durationSec, diffs, qs, sessions, shuffleOptions };
   }, [mode, selectedSection, selectedSubskill, selectedDifficulty, wrongIds, tryoutSet, tryoutItems]);
 
   const handleStart = () => {
@@ -98,8 +136,9 @@ export default function Setup() {
       title: preview.title,
       questionIds: preview.qIds,
       durationSec: preview.durationSec,
-      shuffleOptions: mode !== "tryout",
+      shuffleOptions: false,
       tryoutSetCode: mode === "tryout" ? code : undefined,
+      sessions: preview.sessions,
     };
     const exam = createActiveExam(config);
     saveActiveExam(exam);
@@ -107,6 +146,7 @@ export default function Setup() {
   };
 
   const isTryoutLoading = mode === "tryout" && (tryoutItemsLoading || !tryoutSets);
+  const totalBreaks = preview.sessions.filter(s => s.breakAfterSec > 0).length;
 
   return (
     <div className="min-h-[100dvh] bg-slate-50 flex flex-col">
@@ -208,6 +248,36 @@ export default function Setup() {
           </div>
         )}
 
+        {/* Session breakdown for multi-session modes */}
+        {(mode === "mini" || mode === "full" || mode === "tryout") && preview.sessions.length > 1 && (
+          <div className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2 text-[15px]">
+              <Layers className="w-5 h-5 text-primary" /> Struktur Sesi
+            </h3>
+            <div className="space-y-2">
+              {preview.sessions.map((s, i) => (
+                <div key={i} className="flex items-center justify-between py-2.5 px-3 rounded-xl bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center font-black text-xs">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-700 text-[13px]">{s.label}</div>
+                      <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">{s.questionCount} soal • {Math.round(s.durationSec / 60)} menit</div>
+                    </div>
+                  </div>
+                  {s.breakAfterSec > 0 && (
+                    <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-lg">
+                      <Coffee className="w-3.5 h-3.5" />
+                      {Math.round(s.breakAfterSec / 60)}m istirahat
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm mt-auto">
           <h3 className="font-bold text-slate-800 mb-5 flex items-center gap-2"><Target className="w-5 h-5 text-primary" /> Informasi Sesi</h3>
 
@@ -230,6 +300,18 @@ export default function Setup() {
               <div className="font-black text-slate-800 text-lg mt-0.5">{fmtMinutes(preview.durationSec)}</div>
             </div>
           </div>
+
+          {totalBreaks > 0 && (
+            <div className="flex items-center gap-4 py-3 border-b border-slate-100">
+              <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-500">
+                <Coffee className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <span className="text-slate-500 text-xs font-bold uppercase tracking-wider">Jeda Istirahat</span>
+                <div className="font-black text-slate-800 text-lg mt-0.5">{totalBreaks} kali</div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-5 pt-2">
             <span className="text-slate-500 text-xs font-bold uppercase tracking-wider block mb-3">Distribusi Kesulitan</span>

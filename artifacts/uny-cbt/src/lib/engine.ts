@@ -4,11 +4,13 @@ import type {
   Difficulty,
   ExamConfig,
   ExamResult,
+  ExamSession,
   Question,
   QuestionResult,
   SectionId,
   SectionStats,
 } from "./types";
+import { SECTION_LABELS } from "./analysis";
 
 export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -88,6 +90,7 @@ export function createActiveExam(config: ExamConfig): ActiveExam {
   }
   const ordered = shuffle(base).map((q) => (config.shuffleOptions ? shuffleOptions(q) : q));
   const now = Date.now();
+  const firstSession = config.sessions[0];
   return {
     id: `exam-${now}`,
     mode: config.mode,
@@ -101,6 +104,12 @@ export function createActiveExam(config: ExamConfig): ActiveExam {
     timeSpent: ordered.map(() => 0),
     currentIndex: 0,
     tryoutSetCode: config.tryoutSetCode,
+    sessions: config.sessions,
+    currentSession: 0,
+    sessionStartedAt: now,
+    sessionEndsAt: now + (firstSession?.durationSec ?? config.durationSec) * 1000,
+    onBreak: false,
+    breakEndsAt: 0,
   };
 }
 
@@ -159,4 +168,50 @@ export function scoreExam(exam: ActiveExam): ExamResult {
 
   // Wrong-answer bank is now maintained server-side (see POST /api/attempts).
   return result;
+}
+
+/**
+ * UTBK SNBT-style session structure: 4 sessions (one per section),
+ * each with its own time limit and a break between sessions.
+ * Based on real UTBK 2024-2026 format: ~150 soal, 195 menit, per-subtes timing.
+ */
+export const UTBK_SESSIONS: ExamSession[] = [
+  { sectionId: "tpa", label: "Tes Potensi Akademik", questionCount: 25, durationSec: 30 * 60, breakAfterSec: 5 * 60 },
+  { sectionId: "lit_id", label: "Literasi Bahasa Indonesia", questionCount: 25, durationSec: 30 * 60, breakAfterSec: 5 * 60 },
+  { sectionId: "lit_en", label: "Literasi Bahasa Inggris", questionCount: 25, durationSec: 30 * 60, breakAfterSec: 5 * 60 },
+  { sectionId: "mtk", label: "Penalaran Matematika", questionCount: 25, durationSec: 45 * 60, breakAfterSec: 0 },
+];
+
+export const FULL_TO_SESSIONS: ExamSession[] = UTBK_SESSIONS;
+
+export const MINI_TO_SESSIONS: ExamSession[] = [
+  { sectionId: "tpa", label: "Tes Potensi Akademik", questionCount: 5, durationSec: 7 * 60, breakAfterSec: 2 * 60 },
+  { sectionId: "lit_id", label: "Literasi Bahasa Indonesia", questionCount: 5, durationSec: 7 * 60, breakAfterSec: 2 * 60 },
+  { sectionId: "lit_en", label: "Literasi Bahasa Inggris", questionCount: 5, durationSec: 7 * 60, breakAfterSec: 2 * 60 },
+  { sectionId: "mtk", label: "Penalaran Matematika", questionCount: 5, durationSec: 10 * 60, breakAfterSec: 0 },
+];
+
+/** Build a single-session config for materi/review modes (no breaks needed). */
+export function singleSession(sectionId: SectionId, questionCount: number, durationSec: number): ExamSession[] {
+  return [{ sectionId, label: SECTION_LABELS[sectionId], questionCount, durationSec, breakAfterSec: 0 }];
+}
+
+/** Get the question index range [start, end) for a given session. */
+export function getSessionQuestionRange(sessions: ExamSession[], sessionIndex: number): [number, number] {
+  let start = 0;
+  for (let i = 0; i < sessionIndex; i++) {
+    start += sessions[i].questionCount;
+  }
+  const end = start + (sessions[sessionIndex]?.questionCount ?? 0);
+  return [start, end];
+}
+
+/** Get total duration including breaks. */
+export function totalDurationWithBreaks(sessions: ExamSession[]): number {
+  return sessions.reduce((acc, s) => acc + s.durationSec + s.breakAfterSec, 0);
+}
+
+/** Get total question count across all sessions. */
+export function totalQuestionCount(sessions: ExamSession[]): number {
+  return sessions.reduce((acc, s) => acc + s.questionCount, 0);
 }

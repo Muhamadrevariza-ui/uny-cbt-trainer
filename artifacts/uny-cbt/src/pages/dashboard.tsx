@@ -2,7 +2,7 @@ import { Link } from 'wouter';
 import { useListAttempts, useListTryoutSets } from '@workspace/api-client-react';
 import { attemptToExamResult } from '@/lib/adapt';
 import { aggregate, computeReadiness } from '@/lib/analysis';
-import { BookOpen, Target, Clock, Trophy, BarChart3, History, ArrowRight, ListChecks, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Target, Clock, Trophy, ChartBar as BarChart3, History, ArrowRight, ListChecks, CircleCheck as CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
   const { data: attempts, isLoading: attemptsLoading } = useListAttempts();
@@ -72,7 +72,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="font-bold text-slate-800 text-[15px]">Mini TO</div>
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">12 soal • 15 mnt</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">20 soal • 31 mnt</div>
               </div>
             </Link>
             <Link href="/setup/full" className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 active-elevate group">
@@ -81,7 +81,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <div className="font-bold text-slate-800 text-[15px]">Full TO</div>
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">40 soal • 50 mnt</div>
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mt-1">100 soal • 145 mnt</div>
               </div>
             </Link>
             <Link href="/setup/materi" className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-3 active-elevate group">

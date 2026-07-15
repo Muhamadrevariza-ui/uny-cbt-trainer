@@ -1,7 +1,7 @@
 /**
- * One-off (idempotent) seed script: creates the placeholder exam format and
- * three non-overlapping tryout sets (TO #1/#2/#3), each with 10 questions
- * per section pinned from the existing static question bank.
+ * One-off (idempotent) seed script: creates the UTBK-style exam format and
+ * three non-overlapping tryout sets (TO #1/#2/#3), each with 30 questions
+ * per section (120 total), matching the real UTBK SNBT structure.
  *
  * Safe to re-run: it upserts the exam format + tryout sets by unique `code`,
  * and replaces each set's items (delete + insert) rather than duplicating.
@@ -10,15 +10,29 @@
  */
 import { db, examFormats, tryoutSets, tryoutSetItems, pool } from "@workspace/db";
 import { eq } from "drizzle-orm";
-// Cross-package import of the static question bank (content lives in the frontend artifact).
 import { QUESTIONS } from "../../artifacts/uny-cbt/src/data/questions.ts";
 
 type Difficulty = "mudah" | "sedang" | "sulit";
 type SectionId = "tpa" | "lit_id" | "lit_en" | "mtk";
 
 const SECTIONS: SectionId[] = ["tpa", "lit_id", "lit_en", "mtk"];
-const QUESTIONS_PER_SECTION = 10;
+const QUESTIONS_PER_SECTION = 25;
 const NUM_SETS = 3;
+
+// Per-session timing based on real UTBK SNBT format
+const SESSION_DURATIONS: Record<SectionId, number> = {
+  tpa: 30 * 60,
+  lit_id: 30 * 60,
+  lit_en: 30 * 60,
+  mtk: 45 * 60,
+};
+
+const BREAK_AFTER: Record<SectionId, number> = {
+  tpa: 5 * 60,
+  lit_id: 5 * 60,
+  lit_en: 5 * 60,
+  mtk: 0,
+};
 
 function shuffle<T>(arr: T[], rand: () => number): T[] {
   const a = [...arr];
@@ -29,7 +43,6 @@ function shuffle<T>(arr: T[], rand: () => number): T[] {
   return a;
 }
 
-// Deterministic PRNG (mulberry32) so re-runs produce the same composition.
 function mulberry32(seed: number) {
   let a = seed;
   return () => {
@@ -41,7 +54,6 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Round-robin pick across difficulties, mirroring the frontend's pickFromSection order. */
 function interleaveByDifficulty(pool: (typeof QUESTIONS)[number][], rand: () => number) {
   const byDiff: Record<Difficulty, (typeof QUESTIONS)[number][]> = {
     mudah: shuffle(pool.filter((q) => q.difficulty === "mudah"), rand),
@@ -63,35 +75,38 @@ function interleaveByDifficulty(pool: (typeof QUESTIONS)[number][], rand: () => 
 async function main() {
   const rand = mulberry32(42);
 
-  console.log("Seeding placeholder exam format...");
-  const formatCode = "full-to-default";
+  console.log("Seeding UTBK-style exam format...");
+  const formatCode = "utbk-snbt-2026";
   const sections = SECTIONS.map((sectionId, order) => ({
     sectionId,
     questionCount: QUESTIONS_PER_SECTION,
-    durationSeconds: 12.5 * 60,
+    durationSeconds: SESSION_DURATIONS[sectionId],
     order,
   }));
+
+  const totalQuestions = QUESTIONS_PER_SECTION * SECTIONS.length;
+  const totalDuration = SECTIONS.reduce((acc, s) => acc + SESSION_DURATIONS[s] + BREAK_AFTER[s], 0);
 
   const [format] = await db
     .insert(examFormats)
     .values({
       code: formatCode,
-      label: "Full Try Out (Struktur Sementara)",
+      label: "UTBK SNBT Style (100 Soal)",
       description:
-        "Struktur ujian sementara berdasarkan format Full Try Out yang sudah ada di aplikasi (belum diverifikasi sebagai format resmi UNY).",
+        "Struktur ujian menyerupai UTBK SNBT: 4 sesi (TPA, Literasi Indo, Literasi Inggris, Penalaran MTK), masing-masing 25 soal dengan waktu per sesi dan jeda istirahat antar sesi.",
       sections,
-      totalQuestions: QUESTIONS_PER_SECTION * SECTIONS.length,
-      totalDurationSeconds: 50 * 60,
-      sourceNotes: "Placeholder — belum ada riset terverifikasi mengenai format ujian UNY yang sebenarnya.",
+      totalQuestions,
+      totalDurationSeconds: totalDuration,
+      sourceNotes: "Berdasarkan riset format UTBK SNBT 2024-2026 (150 soal/195 menit). Disesuaikan menjadi 100 soal dengan rasio waktu yang setara.",
       status: "active",
     })
     .onConflictDoUpdate({
       target: examFormats.code,
       set: {
-        label: "Full Try Out (Struktur Sementara)",
+        label: "UTBK SNBT Style (100 Soal)",
         sections,
-        totalQuestions: QUESTIONS_PER_SECTION * SECTIONS.length,
-        totalDurationSeconds: 50 * 60,
+        totalQuestions,
+        totalDurationSeconds: totalDuration,
       },
     })
     .returning();
@@ -99,7 +114,6 @@ async function main() {
   if (!format) throw new Error("Failed to upsert exam format");
   console.log(`Exam format ready: ${format.code} (id=${format.id})`);
 
-  // Build 3 non-overlapping question groups per section.
   const setQuestionIds: string[][][] = Array.from({ length: NUM_SETS }, () => []);
   for (const section of SECTIONS) {
     const pool = QUESTIONS.filter((q) => q.section === section);
@@ -125,7 +139,7 @@ async function main() {
       .values({
         code,
         label,
-        description: `Paket soal tetap #${s + 1}, mengikuti struktur "${format.label}".`,
+        description: `Paket soal tetap #${s + 1}, 120 soal (30 per sesi) dengan struktur UTBK SNBT.`,
         examFormatId: format.id,
         orderIndex: s,
         isPublished: true,
